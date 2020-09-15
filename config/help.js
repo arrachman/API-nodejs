@@ -20,14 +20,28 @@ const tc = async(tryFunc, req, result, line, filename, param) => {
     let respond
     try {
         const token = req.headers.token;
+        
         var decoded = jwt.verify(token, process.env.SECRET);
-        count = decoded.iat - Math.floor(Date.now() / 1000)
-        res.data = count
-        if(count<=0) {
-            respond = res.fail('JWT expired', 401)
-        }
-        else {
-            respond = await tryFunc(req, param)
+        res.data = decoded;
+        respond = res.fail('Need Login', 401)
+        if(Object.keys(tokenList).length == 0) {
+            respond = res.fail('Need Login', 401)
+
+        } else if(tokenList[token]) {
+            getAuth = tokenList[token]
+            let count = parseInt(tokenList[token].resetToken) - Math.floor(Date.now() / 1000)
+            let count_exp = tokenList[token].refreshToken - Math.floor(Date.now() / 1000)
+            res.data = {tokenList : tokenList[token], count, count_exp}
+            if(count<=0 || count_exp <= 0) {
+                respond = res.fail('JWT expired', 401)
+            }
+            else {
+                tokenList[token].resetToken = Math.floor(Date.now() / 1000) + parseInt(process.env.RESET_AUTH) 
+                respond = await tryFunc(req, param)
+            }
+        } else  {
+            respond = res.fail('Auth wrong', 401)
+
         }
     }
     catch (err) {

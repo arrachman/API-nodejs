@@ -6,10 +6,19 @@ const jwt = require('jsonwebtoken');
 const login = async(req) => {
     const param = JSON.parse(req.query.param);
     res.target = param.target; 
+    let refreshToken = Math.floor(Date.now() / 1000) +parseInt(process.env.REFRESH_AUTH)
+    let resetToken = Math.floor(Date.now() / 1000) + parseInt(process.env.RESET_AUTH) 
+
     const checkLogin = (process.env.USER == req.body.user && process.env.PASS == req.body.pass)
     if (checkLogin) {
-        var token = jwt.sign({ id: 123, role: 'admin', iat: Math.floor(Date.now() / 1000) + 30  }, process.env.SECRET);
+        var token = jwt.sign({ id: 123, role: 'admin', iat:  resetToken }, process.env.SECRET, { expiresIn: refreshToken});
         if (token) {
+            const response = {
+                "status": "Logged in",
+                "token": token,
+                refreshToken, resetToken,
+            }
+            tokenList[token] = response
             res.data = {
                         message: "Success Sign In",
                         token: token
